@@ -6,9 +6,11 @@ require "ferrum/keyboard"
 require "ferrum/headers"
 require "ferrum/cookies"
 require "ferrum/dialog"
+require "ferrum/screencaster"
 require "ferrum/network"
 require "ferrum/page/frames"
 require "ferrum/page/screenshot"
+require "ferrum/page/screencast"
 require "ferrum/page/animation"
 require "ferrum/page/tracing"
 require "ferrum/page/stream"
@@ -42,6 +44,7 @@ module Ferrum
     include Screenshot
     include Frames
     include Stream
+    include Screencast
 
     attr_accessor :referrer, :timeout
     attr_reader :target_id, :browser, :event, :tracing
@@ -71,6 +74,8 @@ module Ferrum
     # @return [Cookies]
     attr_reader :cookies
 
+    attr_reader :screencaster
+
     def initialize(target_id, browser, proxy: nil)
       @frames = Concurrent::Map.new
       @main_frame = Frame.new(nil, self)
@@ -91,6 +96,8 @@ module Ferrum
       @cookies = Cookies.new(self)
       @network = Network.new(self)
       @tracing = Tracing.new(self)
+      @screencaster = Screencaster.new(self)
+
 
       subscribe
       prepare_page
@@ -302,6 +309,10 @@ module Ferrum
           request = Network::AuthRequest.new(self, params)
           block.call(request, index, total)
         end
+      when :screencastFrame
+        @client.on("Page.screencastFrame") do |params, index, total|
+          block.call(params, index, total)
+        end
       else
         @client.on(name, &block)
       end
@@ -351,6 +362,10 @@ module Ferrum
                "Please take a look at https://github.com/rubycdp/ferrum#dialog"
           dialog.accept
         end
+      end
+
+      on(:screencastFrame) do |params, index, total|
+        @screencaster.add_frame(params)
       end
     end
 

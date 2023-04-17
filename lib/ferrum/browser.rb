@@ -22,6 +22,7 @@ module Ferrum
                 body doctype content=
                 headers cookies network
                 mouse keyboard
+                start_screencast stop_screencast
                 screenshot pdf mhtml viewport_size
                 frames frame_by main_frame
                 evaluate evaluate_on evaluate_async execute evaluate_func
